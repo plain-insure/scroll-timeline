@@ -201,7 +201,7 @@ export class StyleParser {
     const scopeRoot = scopeSelector ? target.closest(scopeSelector) : undefined;
     if (scopeRoot) {
       // Only resolve scoped timelines when the scope root yields a single
-      // unambiguous source match for the requested timeline name.
+      // unambiguous source element for the requested timeline name.
       const sourceCandidates = sourceSelector ? scopeRoot.querySelectorAll(sourceSelector) : [];
       if (sourceCandidates.length === 1) {
         const source = sourceCandidates[0];
@@ -216,7 +216,7 @@ export class StyleParser {
         }
       }
 
-      // Mirror the same unambiguous lookup behavior for view timelines.
+      // Mirror the same element-based unambiguous lookup behavior for view timelines.
       const subjectCandidates = subjectSelector ? scopeRoot.querySelectorAll(subjectSelector) : [];
       if (subjectCandidates.length === 1) {
         const subject = subjectCandidates[0];

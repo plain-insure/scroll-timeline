@@ -798,6 +798,8 @@ export function fractionalOffset(timeline, value) {
       viewportHeight: CSS.px(window.innerHeight)
     });
     if (sourceScrollDistance === 0) {
+      // A non-scrollable source has no measurable fractional range, so clamp
+      // resolved offsets to the nearest attachment boundary instead.
       return position <= 0 ? 0 : 1;
     }
     const fractionalOffset = position / sourceScrollDistance;
