@@ -983,6 +983,11 @@ export function parseAnimationRange(timeline, value) {
 
   if (timeline instanceof ViewTimeline) {
     const parts = splitIntoComponentValues(value);
+    // Supported shorthand forms map to the current common spec examples:
+    // 1 part: <range-name> | <offset>
+    // 2 parts: <range-name> <offset> | <offset> <offset> | <range-name> <range-name>
+    // 3 parts: <range-name> <offset> <offset> | <offset> <range-name> <offset> | <range-name> <range-name> <offset>
+    // 4 parts: <range-name> <offset> <range-name> <offset>
     if (parts.length === 0 || parts.length > 4) {
       throw TypeError("Invalid time range or unsupported time range format.");
     }
@@ -1023,6 +1028,7 @@ export function parseAnimationRange(timeline, value) {
 
   if (timeline instanceof ScrollTimeline) {
     const parts = splitIntoComponentValues(value);
+    // One part sets only the start offset; two parts set start and end offsets.
     if (parts.length === 0 || parts.length > 2) {
       throw TypeError("Invalid time range or unsupported time range format.");
     }

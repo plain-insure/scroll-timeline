@@ -73,6 +73,18 @@ describe('StyleParser', () => {
     });
   });
 
+  it('defaults omitted view animation-range names to cover when needed', () => {
+    const viewTimeline = Object.create(ViewTimeline.prototype);
+
+    expect(parseAnimationRange(viewTimeline, 'entry 10% 90%')).toMatchObject({
+      end: { rangeName: 'cover', offset: { value: 90, unit: 'percent' } },
+    });
+
+    expect(parseAnimationRange(viewTimeline, '10% exit 90%')).toMatchObject({
+      start: { rangeName: 'cover', offset: { value: 10, unit: 'percent' } },
+    });
+  });
+
   it('treats zero-scroll-distance timelines as inactive', () => {
     class FakeResizeObserver {
       observe() {}

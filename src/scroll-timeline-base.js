@@ -451,6 +451,7 @@ export class ScrollTimeline {
         return "inactive";
     }
 
+    // Per the current spec, timelines with zero scroll distance are inactive.
     if (calculateMaxScrollOffset(container, this.axis) <= 0)
       return "inactive";
 
