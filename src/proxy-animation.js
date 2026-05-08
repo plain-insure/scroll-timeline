@@ -12,7 +12,7 @@ const nativeDocumentGetAnimations = document.getAnimations;
 const nativeElementGetAnimations = window.Element.prototype.getAnimations;
 const nativeElementAnimate = window.Element.prototype.animate;
 const nativeAnimation = window.Animation;
-const DEFAULT_NONFINITE_END_DELAY = -Number.MAX_SAFE_INTEGER;
+const DEFAULT_NONFINITE_END_DELAY = 0;
 
 class PromiseWrapper {
   constructor() {
