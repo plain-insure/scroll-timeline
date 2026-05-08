@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { StyleParser } from '../src/scroll-timeline-css-parser.js';
+globalThis.window = globalThis;
+
+const { StyleParser } = await import('../src/scroll-timeline-css-parser.js');
 
 describe('StyleParser', () => {
   it('resolves relative and root-relative url() references', () => {
