@@ -72,7 +72,7 @@ jobs:
             exit 0
           fi
 
-          if ! node -e "JSON.parse(require('node:fs').readFileSync('test/report/data.json', 'utf8'))" >/dev/null 2>&1; then
+          if ! python -m json.tool test/report/data.json >/dev/null 2>&1; then
             echo "WPT produced an incomplete test/report/data.json, so the expected-results diff was skipped." >> "$GITHUB_STEP_SUMMARY"
             echo "has_summary=false" >> "$GITHUB_OUTPUT"
             exit 0
