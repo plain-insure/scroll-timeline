@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-globalThis.window = globalThis;
-
 const { StyleParser } = await import('../src/scroll-timeline-css-parser.js');
 
 describe('StyleParser', () => {
