@@ -10,6 +10,9 @@ on:
     branches:
       - master
       - main
+  release:
+    types:
+      - published
 
   workflow_dispatch:
 
@@ -47,6 +50,8 @@ jobs:
         run: "[[ -f package-lock.json || -f npm-shrinkwrap.json ]] && npm ci || true"
       - name: Build
         run: "npm run build"
+      - name: Unit tests
+        run: "npm test"
       - name: Checkout WPT
         run: "npm run test-setup"
       - name: WPT hosts
