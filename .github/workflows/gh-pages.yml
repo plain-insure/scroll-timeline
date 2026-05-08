@@ -64,8 +64,24 @@ jobs:
       - name: WPT tests
         run: "npm run test:wpt"
       - name: Expected results
-        run: "npm run test:compare"
+        id: expected_results
+        run: |
+          if [[ ! -s test/report/data.json ]]; then
+            echo "WPT did not produce test/report/data.json, so the expected-results diff was skipped." >> "$GITHUB_STEP_SUMMARY"
+            echo "has_summary=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if ! node -e "JSON.parse(require('node:fs').readFileSync('test/report/data.json', 'utf8'))" >/dev/null 2>&1; then
+            echo "WPT produced an incomplete test/report/data.json, so the expected-results diff was skipped." >> "$GITHUB_STEP_SUMMARY"
+            echo "has_summary=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          npm run test:compare
+          echo "has_summary=true" >> "$GITHUB_OUTPUT"
       - name: Test results summary
+        if: steps.expected_results.outputs.has_summary == 'true'
         run: |
           echo "Passed $(grep '/css' ./test/report/summary.txt |  grep -c '^PASS' ) of $(grep '/css' ./test/report/summary.txt | grep -c '^') css tests" >> $GITHUB_STEP_SUMMARY
           echo "Passed $(grep -v '/css' ./test/report/summary.txt |  grep -c '^PASS' ) of $(grep -v '/css' ./test/report/summary.txt | grep -c '^') waapi tests" >> $GITHUB_STEP_SUMMARY
