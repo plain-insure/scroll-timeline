@@ -800,7 +800,7 @@ export class StyleParser {
     }
 
     if (p.index === p.sheetSrc.length) {
-      console.warn(this.parseError(p, "Unterminated rule while parsing selector; skipping remaining stylesheet").message);
+      console.warn(this.parseError(p, "Unterminated qualified rule or at-rule while parsing selector; skipping remaining stylesheet").message);
       return "";
     }
 
