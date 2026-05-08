@@ -965,7 +965,7 @@ function parseAnimationRangeOffset(part, value) {
   try {
     return simplifyCalculation(CSSNumericValue.parse(value), {});
   } catch (e) {
-    throw TypeError(`Could not parse ${part} range "${value}"`);
+    throw TypeError(`Could not parse ${part} offset "${value}"`);
   }
 }
 
