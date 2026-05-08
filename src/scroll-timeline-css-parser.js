@@ -794,12 +794,13 @@ export class StyleParser {
 
   parseSelector(p) {
     let startIndex = p.index;
+    // Skip ahead until the start of a qualified rule block or the end of an at-rule statement.
     while (p.index < p.sheetSrc.length && p.sheetSrc[p.index] !== "{" && p.sheetSrc[p.index] !== ";") {
       this.advance(p);
     }
 
     if (p.index === p.sheetSrc.length) {
-      // Unterminated statement at end of stylesheet.
+      console.warn(this.parseError(p, "Unterminated rule while parsing selector; skipping remaining stylesheet").message);
       return "";
     }
 
