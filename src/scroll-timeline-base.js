@@ -454,7 +454,7 @@ export class ScrollTimeline {
     if (calculateMaxScrollOffset(container, this.axis) <= 0)
       return "inactive";
 
-    return "active"
+    return "active";
   }
 
   get currentTime() {
