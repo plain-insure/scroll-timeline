@@ -86,6 +86,8 @@ describe('StyleParser', () => {
     globalThis.ResizeObserver = FakeResizeObserver;
     globalThis.MutationObserver = FakeMutationObserver;
     globalThis.document = {
+      addEventListener() {},
+      removeEventListener() {},
       scrollingElement: null,
     };
     globalThis.getComputedStyle = (element) => ({
