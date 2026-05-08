@@ -45,8 +45,17 @@ If you are loading stylesheets from other origins, the polyfill might not be abl
 
 For more details on and use-cases of scroll-driven animations, please refer to [https://developer.chrome.com/articles/scroll-driven-animations/](https://developer.chrome.com/articles/scroll-driven-animations/) and [https://scroll-driven-animations.style/](https://scroll-driven-animations.style/)
 
+# Fork credits for imported fixes
+
+This repository has incorporated a small set of targeted fixes from community forks. Credit for the source work goes to:
+
+- **Viewport unit support (`vw`, `vh`, `vmin`, `vmax`)**: [SalahAdDin/scroll-timeline](https://github.com/SalahAdDin/scroll-timeline) by [@SalahAdDin](https://github.com/SalahAdDin)
+- **`timeline-scope` support**: [johannesodland/scroll-timeline](https://github.com/johannesodland/scroll-timeline) by [@johannesodland](https://github.com/johannesodland)
+- **Zero-scroll-distance / non-overflow animation guard fixes**: [nedap/scroll-timeline](https://github.com/nedap/scroll-timeline) by [@nedap](https://github.com/nedap)
+- **TypeScript entry declarations**: [jhoopmann/scroll-timeline](https://github.com/jhoopmann/scroll-timeline) by [@jhoopmann](https://github.com/jhoopmann)
+
 # Contributing
- 
+  
 ### 1. Polyfill dev 
 
 Running a dev environment
