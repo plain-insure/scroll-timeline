@@ -45,6 +45,15 @@ If you are loading stylesheets from other origins, the polyfill might not be abl
 
 For more details on and use-cases of scroll-driven animations, please refer to [https://developer.chrome.com/articles/scroll-driven-animations/](https://developer.chrome.com/articles/scroll-driven-animations/) and [https://scroll-driven-animations.style/](https://scroll-driven-animations.style/)
 
+# Not implemented
+
+The current draft keeps evolving, and this polyfill still has some larger gaps that would require broader architectural work rather than a surgical patch. At the moment, the following areas are not fully implemented:
+
+- Full spec-complete CSS parsing/validation for every `animation-timeline`, `animation-range`, `scroll()`, and `view()` edge case.
+- Full named timeline lookup parity with the current flat-tree/tree-order scoping rules in all DOM structures, including more complex descendant/sibling/shadow-DOM cases.
+- Full view-timeline range fidelity for cases called out in the codebase TODOs such as sticky positioning and other layout-sensitive edge cases.
+- Complete WPT parity with the latest draft across all declarative and imperative APIs.
+
 # Fork credits for imported fixes
 
 This repository has incorporated a small set of targeted fixes from community forks. Credit for the source work goes to:
