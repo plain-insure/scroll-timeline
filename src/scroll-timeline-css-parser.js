@@ -6,6 +6,7 @@ export const RegexMatcher = {
   WHITE_SPACE: /\s*/g,
   NUMBER: /^[0-9]+/,
   TIME: /^[0-9]+(s|ms)/,
+  TIMELINE_SCOPE: /timeline-scope\s*:([^;}]+)/,
   SCROLL_TIMELINE: /scroll-timeline\s*:([^;}]+)/,
   SCROLL_TIMELINE_NAME: /scroll-timeline-name\s*:([^;}]+)/,
   SCROLL_TIMELINE_AXIS: /scroll-timeline-axis\s*:([^;}]+)/,
@@ -46,6 +47,7 @@ export class StyleParser {
     this.anonymousScrollTimelineOptions = new Map(); // save anonymous options by name
     this.anonymousViewTimelineOptions = new Map(); // save anonymous options by name
     this.sourceSelectorToScrollTimeline = [];
+    this.scopeSelectorToScopeName = [];
     this.subjectSelectorToViewTimeline = [];
     this.keyframeNamesSelectors = new Map();
   }
@@ -147,17 +149,33 @@ export class StyleParser {
     return null;
   }
 
-  getScrollTimelineOptions(timelineName, target) {
-    const anonymousTimelineOptions = this.getAnonymousScrollTimelineOptions(timelineName, target);
-    if(anonymousTimelineOptions)
+  getTimelineOptions(timelineName, target) {
+    const anonymousTimelineOptions =
+      this.getAnonymousScrollTimelineOptions(timelineName, target) ||
+      this.getAnonymousViewTimelineOptions(timelineName, target);
+    if (anonymousTimelineOptions)
       return anonymousTimelineOptions;
 
-    for (let i = this.sourceSelectorToScrollTimeline.length - 1; i >= 0; i--) {
-      const options = this.sourceSelectorToScrollTimeline[i];
-      if(options.name == timelineName) {
-        const source = this.findPreviousSiblingOrAncestorMatchingSelector(target, options.selector);
+    const sourceSelector = this.sourceSelectorToScrollTimeline
+      .filter(options => options.name === timelineName)
+      .map(options => options.selector)
+      .join(',');
+    const subjectSelector = this.subjectSelectorToViewTimeline
+      .filter(options => options.name === timelineName)
+      .map(options => options.selector)
+      .join(',');
+    // The timeline-scope property accepts the `all` keyword to expose all named
+    // timelines from the matched scope root.
+    const scopeSelector = this.scopeSelectorToScopeName
+      .filter(options => options.name === timelineName || options.name === 'all')
+      .map(options => options.selector)
+      .join(',');
 
-        if(source) {
+    const source = sourceSelector ? target.closest(sourceSelector) : undefined;
+    if (source) {
+      for (let i = this.sourceSelectorToScrollTimeline.length - 1; i >= 0; i--) {
+        const options = this.sourceSelectorToScrollTimeline[i];
+        if (options.name === timelineName && source.matches(options.selector)) {
           return {
             source,
             ...(options.axis ? { axis: options.axis } : {}),
@@ -166,23 +184,55 @@ export class StyleParser {
       }
     }
 
-    return null;
-  }
-
-  // TODO: Remove this old lookup mechanism and replace it by one that
-  // respects timeline-scope (https://github.com/flackr/scroll-timeline/issues/123)
-  findPreviousSiblingOrAncestorMatchingSelector(target, selector) {
-    // Target self
-    let candidate = target;
-
-    // Walk the DOM tree: preceding siblings and ancestors
-    while (candidate) {
-      if (candidate.matches(selector))
-        return candidate;
-      candidate = candidate.previousElementSibling || candidate.parentElement;
+    const subject = subjectSelector ? target.closest(subjectSelector) : undefined;
+    if (subject) {
+      for (let i = this.subjectSelectorToViewTimeline.length - 1; i >= 0; i--) {
+        const options = this.subjectSelectorToViewTimeline[i];
+        if (options.name === timelineName && subject.matches(options.selector)) {
+          return {
+            subject,
+            axis: options.axis,
+            inset: options.inset
+          };
+        }
+      }
     }
 
-    // No match
+    const scopeRoot = scopeSelector ? target.closest(scopeSelector) : undefined;
+    if (scopeRoot) {
+      // Only resolve scoped timelines when the scope root yields a single
+      // unambiguous source element for the requested timeline name.
+      const sourceCandidates = sourceSelector ? scopeRoot.querySelectorAll(sourceSelector) : [];
+      if (sourceCandidates.length === 1) {
+        const source = sourceCandidates[0];
+        for (let i = this.sourceSelectorToScrollTimeline.length - 1; i >= 0; i--) {
+          const options = this.sourceSelectorToScrollTimeline[i];
+          if (options.name === timelineName && source.matches(options.selector)) {
+            return {
+              source,
+              ...(options.axis ? { axis: options.axis } : {}),
+            };
+          }
+        }
+      }
+
+      // Mirror the same element-based unambiguous lookup behavior for view timelines.
+      const subjectCandidates = subjectSelector ? scopeRoot.querySelectorAll(subjectSelector) : [];
+      if (subjectCandidates.length === 1) {
+        const subject = subjectCandidates[0];
+        for (let i = this.subjectSelectorToViewTimeline.length - 1; i >= 0; i--) {
+          const options = this.subjectSelectorToViewTimeline[i];
+          if (options.name === timelineName && subject.matches(options.selector)) {
+            return {
+              subject,
+              axis: options.axis,
+              inset: options.inset
+            };
+          }
+        }
+      }
+    }
+
     return null;
   }
 
@@ -194,28 +244,6 @@ export class StyleParser {
         axis: (options.axis ? options.axis : 'block'),
         inset: (options.inset ? options.inset : 'auto'),
       };
-    }
-
-    return null;
-  }
-
-  getViewTimelineOptions(timelineName, target) {
-    const anonymousTimelineOptions = this.getAnonymousViewTimelineOptions(timelineName, target);
-    if(anonymousTimelineOptions)
-      return anonymousTimelineOptions;
-
-    for (let i = this.subjectSelectorToViewTimeline.length - 1; i >= 0; i--) {
-      const options = this.subjectSelectorToViewTimeline[i];
-      if(options.name == timelineName) {
-        const subject = this.findPreviousSiblingOrAncestorMatchingSelector(target, options.selector);
-        if(subject) {
-          return {
-            subject,
-            axis: options.axis,
-            inset: options.inset
-          }
-        }
-      }
     }
 
     return null;
@@ -233,6 +261,7 @@ export class StyleParser {
     const hasAnimation = rule.block.contents.includes("animation:");
 
     this.saveSourceSelectorToScrollTimeline(rule);
+    this.saveScopeSelectorToScopeName(rule);
     this.saveSubjectSelectorToViewTimeline(rule);
 
     if (!hasAnimationTimeline && !hasAnimationName && !hasAnimation) {
@@ -422,6 +451,18 @@ export class StyleParser {
     }
 
     this.subjectSelectorToViewTimeline.push(...timelines);
+  }
+
+  saveScopeSelectorToScopeName(rule) {
+    if (!rule.block.contents.includes("timeline-scope:")) return;
+
+    const timelineScopes = this.extractMatches(rule.block.contents, RegexMatcher.TIMELINE_SCOPE);
+    for (const timelineScope of timelineScopes) {
+      const parts = this.split(timelineScope);
+      for (const part of parts) {
+        this.scopeSelectorToScopeName.push({selector: rule.selector, name: part});
+      }
+    }
   }
 
   hasDuration(shorthand) {

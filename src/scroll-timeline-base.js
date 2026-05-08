@@ -792,8 +792,16 @@ export function fractionalOffset(timeline, value) {
       sourceScrollDistance = sourceMeasurements.scrollHeight - sourceMeasurements.clientHeight;
     }
 
-    // TODO: pass relative measurements (viewport, font-size, root font-size, etc. ) to resolvePx() to resolve relative units
-    const position = resolvePx(value, {percentageReference: CSS.px(sourceScrollDistance)});
+    const position = resolvePx(value, {
+      percentageReference: CSS.px(sourceScrollDistance),
+      viewportWidth: CSS.px(window.innerWidth),
+      viewportHeight: CSS.px(window.innerHeight)
+    });
+    if (sourceScrollDistance === 0) {
+      // A non-scrollable source has no measurable fractional range, so clamp
+      // resolved offsets to the nearest attachment boundary instead.
+      return position <= 0 ? 0 : 1;
+    }
     const fractionalOffset = position / sourceScrollDistance;
 
     return fractionalOffset;

@@ -12,6 +12,7 @@ const nativeDocumentGetAnimations = document.getAnimations;
 const nativeElementGetAnimations = window.Element.prototype.getAnimations;
 const nativeElementAnimate = window.Element.prototype.animate;
 const nativeAnimation = window.Animation;
+const DEFAULT_NONFINITE_END_DELAY = 0;
 
 class PromiseWrapper {
   constructor() {
@@ -904,7 +905,8 @@ function autoAlignStartTime(details) {
   // 6. Let end offset be the resolved timeline time corresponding to the end of the animation attachment range.
   //    In the case of view timelines, it requires a calculation based on the proportion of the cover range.
   try {
-    endOffset = CSS.percent((1 - fractionalEndDelay(details)) * 100);
+    const endDelay = fractionalEndDelay(details);
+    endOffset = CSS.percent((1 - (isFinite(endDelay) ? endDelay : DEFAULT_NONFINITE_END_DELAY)) * 100);
   } catch (e) {
     // TODO: Validate supported values for range end, to avoid exceptions when resolving the values.
 
