@@ -2,14 +2,14 @@
 
 A polyfill of ScrollTimeline and ViewTimeline as defined by the [spec](https://drafts.csswg.org/scroll-animations-1/).
 
-View a [cool demo showing its usage](https://flackr.github.io/scroll-timeline/demo/parallax/)!
+View a [cool demo showing its usage](https://plain-insure.github.io/scroll-timeline/demo/parallax/)!
 
 # Usage
 
 To use this polyfill, import the module into your site and you can start creating animations that use a `ScrollTimeline` or `ViewTimeline`.
 
 ```js
-import 'https://flackr.github.io/scroll-timeline/dist/scroll-timeline.js';
+import 'https://plain-insure.github.io/scroll-timeline/dist/scroll-timeline.js';
 
 document.getElementById('parallax').animate(
     { transform: ['translateY(0)', 'translateY(100px)']},
@@ -25,7 +25,7 @@ document.getElementById('parallax').animate(
 Also works with CSS Animations that use a `view-timeline` or `scroll-timeline`
 
 ```html
-<script src="https://flackr.github.io/scroll-timeline/dist/scroll-timeline.js"></script>
+<script src="https://plain-insure.github.io/scroll-timeline/dist/scroll-timeline.js"></script>
 ```
 
 ```css
@@ -66,6 +66,12 @@ npm run dev
 ```
 
 Then open the browser `http://localhost:3000`, choose one of the demos (test) to see how your changes. 
+
+#### Run the unit tests
+
+```shell script
+npm test
+```
 
 ### 2. Configure & Run Tests
 
