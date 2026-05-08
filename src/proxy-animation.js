@@ -1,6 +1,7 @@
 import {
   ANIMATION_RANGE_NAMES,
   ScrollTimeline,
+  ViewTimeline,
   addAnimation,
   removeAnimation,
   fractionalOffset,
@@ -960,7 +961,15 @@ function getNormalEndRange(timeline) {
   unsupportedTimeline(timeline);
 }
 
-function parseAnimationRange(timeline, value) {
+function parseAnimationRangeOffset(part, value) {
+  try {
+    return simplifyCalculation(CSSNumericValue.parse(value), {});
+  } catch (e) {
+    throw TypeError(`Could not parse ${part} offset "${value}"`);
+  }
+}
+
+export function parseAnimationRange(timeline, value) {
   if (!value)
     return {
       start: 'normal',
@@ -973,56 +982,61 @@ function parseAnimationRange(timeline, value) {
   };
 
   if (timeline instanceof ViewTimeline) {
-    // Format:
-    // <start-name> <start-offset> <end-name> <end-offset>
-    // <name> --> <name> 0% <name> 100%
-    // <name> <start-offset> <end-offset> --> <name> <start-offset>
-    //                                        <name> <end-offset>
-    // <start-offset> <end-offset> --> cover <start-offset> cover <end-offset>
-    // TODO: Support all formatting options once ratified in the spec.
     const parts = splitIntoComponentValues(value);
-    const rangeNames = [];
-    const offsets = [];
-
-    parts.forEach(part => {
-      if (ANIMATION_RANGE_NAMES.includes(part)) {
-        rangeNames.push(part);
-      } else {
-        try {
-          offsets.push(CSSNumericValue.parse(part));
-        } catch (e) {
-          throw TypeError(`Could not parse range "${value}"`);
-        }
-      }
-    });
-
-    if (rangeNames.length > 2 || offsets.length > 2 || offsets.length == 1) {
+    // Supported shorthand forms map to the current common spec examples:
+    // 1 part: <range-name> | <offset>
+    // 2 parts: <range-name> <offset> | <offset> <offset> | <range-name> <range-name>
+    // 3 parts: <range-name> <offset> <offset> | <offset> <range-name> <offset> | <range-name> <range-name> <offset>
+    // 4 parts: <range-name> <offset> <range-name> <offset>
+    if (parts.length === 0 || parts.length > 4) {
       throw TypeError("Invalid time range or unsupported time range format.");
     }
 
-    if (rangeNames.length) {
-      animationRange.start.rangeName = rangeNames[0];
-      animationRange.end.rangeName = rangeNames.length > 1 ? rangeNames[1] : rangeNames[0];
+    let index = 0;
+    let startHasExplicitName = false;
+
+    if (ANIMATION_RANGE_NAMES.includes(parts[index])) {
+      animationRange.start.rangeName = parts[index++];
+      startHasExplicitName = true;
     }
 
-    if (offsets.length > 1) {
-      animationRange.start.offset = offsets[0];
-      animationRange.end.offset = offsets[1];
+    if (index < parts.length && !ANIMATION_RANGE_NAMES.includes(parts[index])) {
+      animationRange.start.offset = parseAnimationRangeOffset('start', parts[index++]);
+    }
+
+    if (index === parts.length) {
+      if (startHasExplicitName) {
+        animationRange.end.rangeName = animationRange.start.rangeName;
+      }
+      return animationRange;
+    }
+
+    if (ANIMATION_RANGE_NAMES.includes(parts[index])) {
+      animationRange.end.rangeName = parts[index++];
+    }
+
+    if (index < parts.length) {
+      animationRange.end.offset = parseAnimationRangeOffset('end', parts[index++]);
+    }
+
+    if (index !== parts.length) {
+      throw TypeError("Invalid time range or unsupported time range format.");
     }
 
     return animationRange;
   }
 
   if (timeline instanceof ScrollTimeline) {
-    // @TODO: Play nice with only 1 offset being set
-    // @TODO: Play nice with expressions such as `calc(50% + 10px) 100%`
-    const parts = value.split(' ');
-    if (parts.length != 2) {
+    const parts = splitIntoComponentValues(value);
+    // One part sets only the start offset; two parts set start and end offsets.
+    if (parts.length === 0 || parts.length > 2) {
       throw TypeError("Invalid time range or unsupported time range format.");
     }
 
-    animationRange.start = CSSNumericValue.parse(parts[0]);
-    animationRange.end = CSSNumericValue.parse(parts[1]);
+    animationRange.start = parseAnimationRangeOffset('start', parts[0]);
+    if (parts[1] !== undefined) {
+      animationRange.end = parseAnimationRangeOffset('end', parts[1]);
+    }
 
     return animationRange;
   }

@@ -451,7 +451,11 @@ export class ScrollTimeline {
         return "inactive";
     }
 
-    return "active"
+    // Per the current spec, timelines with zero scroll distance are inactive.
+    if (calculateMaxScrollOffset(container, this.axis) <= 0)
+      return "inactive";
+
+    return "active";
   }
 
   get currentTime() {
@@ -473,7 +477,7 @@ export class ScrollTimeline {
     const maxScrollPos = calculateMaxScrollOffset(container, axis);
 
     return maxScrollPos > 0 ? CSS.percent(100 * scrollPos / maxScrollPos)
-                            : CSS.percent(100);
+                            : unresolved;
   }
 
   get __polyfill() {
@@ -879,6 +883,8 @@ export class ViewTimeline extends ScrollTimeline {
 
   get currentTime() {
     const unresolved = null;
+    if (this.phase === 'inactive')
+      return unresolved;
     const scrollPos = directionAwareScrollOffset(this.source, this.axis);
     if (scrollPos == unresolved)
       return unresolved;
@@ -893,11 +899,13 @@ export class ViewTimeline extends ScrollTimeline {
   }
 
   get startOffset() {
-    return CSS.px(range(this,'cover').start);
+    const offsets = range(this,'cover');
+    return offsets ? CSS.px(offsets.start) : null;
   }
 
   get endOffset() {
-    return CSS.px(range(this,'cover').end);
+    const offsets = range(this,'cover');
+    return offsets ? CSS.px(offsets.end) : null;
   }
 
 }
