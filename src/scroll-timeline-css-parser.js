@@ -794,15 +794,16 @@ export class StyleParser {
 
   parseSelector(p) {
     let startIndex = p.index;
-    while (p.index < p.sheetSrc.length && !this.lookAhead("{", p) && !this.lookAhead(";", p)) {
+    while (p.index < p.sheetSrc.length && p.sheetSrc[p.index] !== "{" && p.sheetSrc[p.index] !== ";") {
       this.advance(p);
     }
 
     if (p.index === p.sheetSrc.length) {
+      // Unterminated statement at end of stylesheet.
       return "";
     }
 
-    if (this.lookAhead(";", p)) {
+    if (p.sheetSrc[p.index] === ";") {
       this.advance(p);
       return "";
     }
