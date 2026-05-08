@@ -798,7 +798,7 @@ export class StyleParser {
       this.advance(p);
     }
 
-    if (p.index >= p.sheetSrc.length) {
+    if (p.index === p.sheetSrc.length) {
       return "";
     }
 
