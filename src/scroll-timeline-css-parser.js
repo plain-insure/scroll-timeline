@@ -794,7 +794,19 @@ export class StyleParser {
 
   parseSelector(p) {
     let startIndex = p.index;
-    this.eatUntil("{", p);
+    while (p.index < p.sheetSrc.length && !this.lookAhead("{", p) && !this.lookAhead(";", p)) {
+      this.advance(p);
+    }
+
+    if (p.index >= p.sheetSrc.length) {
+      return "";
+    }
+
+    if (this.lookAhead(";", p)) {
+      this.advance(p);
+      return "";
+    }
+
     if (startIndex === p.index) {
       throw Error("Empty selector");
     }
