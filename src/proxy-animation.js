@@ -12,6 +12,7 @@ const nativeDocumentGetAnimations = document.getAnimations;
 const nativeElementGetAnimations = window.Element.prototype.getAnimations;
 const nativeElementAnimate = window.Element.prototype.animate;
 const nativeAnimation = window.Animation;
+const DEFAULT_NONFINITE_END_DELAY = -Number.MAX_SAFE_INTEGER;
 
 class PromiseWrapper {
   constructor() {
@@ -905,7 +906,7 @@ function autoAlignStartTime(details) {
   //    In the case of view timelines, it requires a calculation based on the proportion of the cover range.
   try {
     const endDelay = fractionalEndDelay(details);
-    endOffset = CSS.percent((1 - (isFinite(endDelay) ? endDelay : -Number.MAX_SAFE_INTEGER)) * 100);
+    endOffset = CSS.percent((1 - (isFinite(endDelay) ? endDelay : DEFAULT_NONFINITE_END_DELAY)) * 100);
   } catch (e) {
     // TODO: Validate supported values for range end, to avoid exceptions when resolving the values.
 

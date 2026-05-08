@@ -164,6 +164,8 @@ export class StyleParser {
       .filter(options => options.name === timelineName)
       .map(options => options.selector)
       .join(',');
+    // The timeline-scope property accepts the `all` keyword to expose all named
+    // timelines from the matched scope root.
     const scopeSelector = this.scopeSelectorToScopeName
       .filter(options => options.name === timelineName || options.name === 'all')
       .map(options => options.selector)

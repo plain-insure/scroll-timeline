@@ -797,8 +797,8 @@ export function fractionalOffset(timeline, value) {
       viewportWidth: CSS.px(window.innerWidth),
       viewportHeight: CSS.px(window.innerHeight)
     });
-    if (position === 0) {
-      return 0;
+    if (sourceScrollDistance === 0) {
+      return position <= 0 ? 0 : 1;
     }
     const fractionalOffset = position / sourceScrollDistance;
 
