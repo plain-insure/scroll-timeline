@@ -48,6 +48,23 @@ describe('StyleParser', () => {
     expect(parser.parseAnonymousScrollTimeline('named-timeline')).toBeNull();
   });
 
+  it('ignores semicolon at-rules while parsing qualified rules', () => {
+    const parser = new StyleParser();
+    const css = '@import url("./theme.css");\n.target { animation-timeline: --my-timeline; }';
+
+    expect(() => {
+      const firstPass = parser.transpileStyleSheet(css, true);
+      parser.transpileStyleSheet(firstPass, false);
+    }).not.toThrow();
+
+    expect(parser.cssRulesWithTimelineName).toEqual([
+      {
+        selector: '.target',
+        'animation-timeline': '--my-timeline',
+      },
+    ]);
+  });
+
   it('parses current-spec animation-range shorthands for scroll and view timelines', () => {
     const scrollTimeline = Object.create(ScrollTimeline.prototype);
     const viewTimeline = Object.create(ViewTimeline.prototype);
