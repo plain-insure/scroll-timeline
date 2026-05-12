@@ -54,9 +54,16 @@ function initMutationObserver() {
       return;
     }
     fetch(linkElement.getAttribute('href')).then(async (response) => {
+      // Dev servers (e.g. Vite) may serve CSS URLs as JavaScript modules when
+      // requested via fetch(). Processing JS as CSS produces a broken blob URL
+      // that replaces the working stylesheet href, destroying all styles.
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('text/css')) {
+        return;
+      }
       const result = await response.text();
       let newSrc = parser.transpileStyleSheet(result, true);
-      newSrc = parser.transpileStyleSheet(result, false, response.url);
+      newSrc = parser.transpileStyleSheet(newSrc, false, response.url);
       if (newSrc != result) {
         const blob = new Blob([newSrc], { type: 'text/css' });
         const url = URL.createObjectURL(blob);
