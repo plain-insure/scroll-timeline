@@ -34,40 +34,50 @@ function initMutationObserver() {
     // Don’t touch empty style tags nor tags controlled by aphrodite.
     // Details at https://github.com/Khan/aphrodite/blob/master/src/inject.js,
     // but any modification to the style tag will break the entire page.
-    if (el.innerHTML.trim().length === 0 || 'aphrodite' in el.dataset) {
+    // Also skip style tags that were injected by this polyfill.
+    if (el.innerHTML.trim().length === 0 || ‘aphrodite’ in el.dataset || ‘scrollTimelinePolyfill’ in el.dataset) {
       return;
     }
     // TODO: Do with one pass for better performance
     let newSrc = parser.transpileStyleSheet(el.innerHTML, true);
     newSrc = parser.transpileStyleSheet(newSrc, false);
-    el.innerHTML = newSrc;
+    if (newSrc !== el.innerHTML) {
+      const newStyle = document.createElement(‘style’);
+      newStyle.dataset.scrollTimelinePolyfill = ‘’;
+      newStyle.textContent = newSrc;
+      el.after(newStyle);
+    }
   }
 
   function handleLinkedStylesheet(linkElement) {
     // Filter only css links to external stylesheets.
-    if (linkElement.type != 'text/css' && linkElement.rel != 'stylesheet' || !linkElement.href) {
+    if (linkElement.type != ‘text/css’ && linkElement.rel != ‘stylesheet’ || !linkElement.href) {
       return;
     }
     const url = new URL(linkElement.href, document.baseURI);
     if (url.origin != location.origin) {
-      // Most likely we won't be able to fetch resources from other origins.
+      // Most likely we won’t be able to fetch resources from other origins.
       return;
     }
-    fetch(linkElement.getAttribute('href'), { headers: { 'Accept': 'text/css,*/*;q=0.1' } }).then(async (response) => {
+    fetch(linkElement.getAttribute(‘href’), { headers: { ‘Accept’: ‘text/css,*/*;q=0.1’ } }).then(async (response) => {
       // Dev servers (e.g. Vite) may serve CSS URLs as JavaScript modules when
       // requested via fetch(). Processing JS as CSS produces a broken blob URL
       // that replaces the working stylesheet href, destroying all styles.
-      const contentType = response.headers.get('content-type') || '';
-      if (!contentType.includes('text/css')) {
+      const contentType = response.headers.get(‘content-type’) || ‘’;
+      if (!contentType.includes(‘text/css’)) {
         return;
       }
       const result = await response.text();
+      // Parse without URL resolution so the change check only fires for
+      // actual scroll-timeline modifications, not merely relative url() rewrites.
       let newSrc = parser.transpileStyleSheet(result, true);
-      newSrc = parser.transpileStyleSheet(newSrc, false, response.url);
-      if (newSrc != result) {
-        const blob = new Blob([newSrc], { type: 'text/css' });
-        const url = URL.createObjectURL(blob);
-        linkElement.setAttribute('href', url);
+      newSrc = parser.transpileStyleSheet(newSrc, false);
+      if (newSrc !== result) {
+        // Resolve relative URLs for the injected <style> (original <link> is kept intact).
+        const newStyle = document.createElement(‘style’);
+        newStyle.dataset.scrollTimelinePolyfill = ‘’;
+        newStyle.textContent = parser.replaceUrlFunctions(newSrc, response.url);
+        linkElement.after(newStyle);
       }
     });
   }
