@@ -53,7 +53,7 @@ function initMutationObserver() {
       // Most likely we won't be able to fetch resources from other origins.
       return;
     }
-    fetch(linkElement.getAttribute('href')).then(async (response) => {
+    fetch(linkElement.getAttribute('href'), { headers: { 'Accept': 'text/css,*/*;q=0.1' } }).then(async (response) => {
       // Dev servers (e.g. Vite) may serve CSS URLs as JavaScript modules when
       // requested via fetch(). Processing JS as CSS produces a broken blob URL
       // that replaces the working stylesheet href, destroying all styles.

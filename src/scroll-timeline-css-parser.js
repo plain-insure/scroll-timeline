@@ -102,6 +102,14 @@ export class StyleParser {
         ? srcUrl.substring(0, srcUrl.lastIndexOf('/'))
         : srcUrlOrigin;
 
+    // Replace bare-string @import relative paths (e.g. @import 'base.css').
+    // url()-form @import is caught by the url() regexes below.
+    // Without this, blob URLs created from fetched CSS break relative @imports.
+    sheetSrc = sheetSrc.replace(/@import\s+(['"])(?!https?:\/\/|data:|blob:|\/)(\.\/)?/gm, `@import $1${srcUrlDir}/`)
+
+    // Replace bare-string @import path-absolute paths (e.g. @import '/base.css').
+    sheetSrc = sheetSrc.replace(/@import\s+(['"])\//gm, `@import $1${srcUrlOrigin}/`)
+
     // replace relative paths
     sheetSrc = sheetSrc.replace(/url\((?:(['"])(?!https?:\/\/|data:|blob:|\/)|(?!['"]?(?:https?:\/\/|data:|blob:|\/)))(?:\.\/)?/gm, `url($1${srcUrlDir}/`)
 
