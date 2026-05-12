@@ -4,6 +4,31 @@ import { ScrollTimeline, ViewTimeline, getScrollParent, calculateRange,
   calculateRelativePosition, measureSubject, measureSource } from "./scroll-timeline-base";
 
 const parser = new StyleParser();
+// Tracks CSS animations already handed off to a ProxyAnimation so we never
+// double-apply if both applyScrollTimelinesRetroactively and animationstart
+// fire for the same animation (e.g. when a browser restarts an animation
+// after its duration changes via the injected <style>).
+const handledCSSAnimations = new WeakSet();
+
+// For <link> stylesheets the browser's render-blocking fetch almost always
+// completes before the polyfill's async fetch, so animationstart fires while
+// the parser state is still empty.  After injecting CSS we call this to pick
+// up any animations that are already running / filling.
+function applyScrollTimelinesRetroactively() {
+  document.getAnimations().forEach(anim => {
+    if (anim instanceof ProxyAnimation || handledCSSAnimations.has(anim)) return;
+    if (typeof anim.animationName !== 'string') return;
+    const target = anim.effect && anim.effect.target;
+    if (!target) return;
+    const result = createScrollTimeline(anim, anim.animationName, target);
+    if (result && result.timeline) {
+      handledCSSAnimations.add(anim);
+      const proxyAnimation = new ProxyAnimation(anim, result.timeline, result.animOptions);
+      anim.pause();
+      proxyAnimation.play();
+    }
+  });
+}
 
 function initMutationObserver() {
   const sheetObserver = new MutationObserver((entries) => {
@@ -47,6 +72,7 @@ function initMutationObserver() {
       newStyle.textContent = newSrc;
       el.after(newStyle);
     }
+    applyScrollTimelinesRetroactively();
   }
 
   function handleLinkedStylesheet(linkElement) {
@@ -79,6 +105,10 @@ function initMutationObserver() {
         newStyle.textContent = parser.replaceUrlFunctions(newSrc, response.url);
         linkElement.after(newStyle);
       }
+      // The browser's render-blocking fetch typically beats the polyfill's
+      // async fetch, so animationstart may have already fired before the
+      // parser state was ready.  Pick up any such animations now.
+      applyScrollTimelinesRetroactively();
     });
   }
 
@@ -187,10 +217,12 @@ export function initCSSPolyfill() {
   // because we may lose some of the 'animationstart' events by the time 'load' is completed.
   window.addEventListener('animationstart', (evt) => {
     evt.target.getAnimations().filter(anim => anim.animationName === evt.animationName).forEach(anim => {
+      if (handledCSSAnimations.has(anim)) return;
       const result = createScrollTimeline(anim, anim.animationName, evt.target);
       if (result) {
         // If the CSS Animation refers to a scroll or view timeline we need to proxy the animation instance.
         if (result.timeline && !(anim instanceof ProxyAnimation)) {
+          handledCSSAnimations.add(anim);
           const proxyAnimation = new ProxyAnimation(anim, result.timeline, result.animOptions);
           anim.pause();
           proxyAnimation.play();
