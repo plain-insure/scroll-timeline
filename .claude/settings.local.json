@@ -4,7 +4,8 @@
       "Bash(npm run *)",
       "Bash(npm install *)",
       "Bash(node --input-type=module)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "WebFetch(domain:a97cc72d.qwik-5g3.pages.dev)"
     ]
   }
 }

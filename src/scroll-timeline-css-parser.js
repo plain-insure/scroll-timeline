@@ -506,7 +506,7 @@ export class StyleParser {
     const value = RegexMatcher.ANIMATION_TIMELINE.exec(contents)[1].trim();
     const timelineNames = [];
 
-    value.split(",").map(part => part.trim()).forEach(part => {
+    splitByCommaRespectingParens(value).map(part => part.trim()).forEach(part => {
       if(isAnonymousTimeline(part)) {
         const name = this.saveAnonymousTimelineName(part);
         timelineNames.push(name);
@@ -842,13 +842,33 @@ export class StyleParser {
   }
 
   extractMatches(contents, matcher, separator=',') {
-    return matcher.exec(contents)[VALUES_CAPTURE_INDEX].trim().split(separator).map(item => item.trim());
+    const value = matcher.exec(contents)[VALUES_CAPTURE_INDEX].trim();
+    if (separator === ',') {
+      return splitByCommaRespectingParens(value).map(item => item.trim()).filter(Boolean);
+    }
+    return value.split(separator).map(item => item.trim());
   }
 
   split(contents) {
     return contents.split(" ").map(item => item.trim())
       .filter(item => item != "");
   }
+}
+
+function splitByCommaRespectingParens(str) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === '(') depth++;
+    else if (str[i] === ')') depth--;
+    else if (str[i] === ',' && depth === 0) {
+      parts.push(str.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(str.slice(start));
+  return parts;
 }
 
 function isAnonymousTimeline(part) {
