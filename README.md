@@ -54,6 +54,36 @@ The current draft keeps evolving, and this polyfill still has some larger gaps t
 - Full view-timeline range fidelity for cases called out in the codebase TODOs such as sticky positioning and other layout-sensitive edge cases.
 - Complete WPT parity with the latest draft across all declarative and imperative APIs.
 
+# Fixes in this fork
+
+The following bugs are fixed in this fork relative to the upstream [flackr/scroll-timeline](https://github.com/flackr/scroll-timeline).
+
+## CSS parser: comma splitting ignores parentheses
+
+**Symptom:** `Could not parse start offset "50%)"` (or similar fragment with a stray closing parenthesis).
+
+**Root cause:** `extractMatches` and `extractScrollTimelineNames` split comma-separated CSS values using a naive `String.split(',')`. Any CSS function that uses a comma internally — `clamp(0%, 50%, 100%)`, `var(--x, fallback)`, `min(...)`, `max(...)` — would be split at the internal comma, producing malformed fragments like `50%)` as a separate token.
+
+**Example:** `animation-range: entry clamp(0%, 50%), cover` was split into `['entry clamp(0%', '50%)', 'cover']` instead of `['entry clamp(0%, 50%)', 'cover']`.
+
+**Fix:** Added `splitByCommaRespectingParens()` which tracks parenthesis depth and only splits on commas at depth zero. Used in place of `String.split(',')` throughout the CSS parser. ([scroll-timeline-css-parser.js](src/scroll-timeline-css-parser.js))
+
+## CSS parser: `var()` in `animation-range` not resolved
+
+**Symptom:** `Could not parse start offset "var(--sr-range-start, entry 20%)"`.
+
+**Root cause:** After the comma-split fix correctly preserved `var(--sr-range-start, entry 20%)` as a single token, `CSSNumericValue.parse()` still cannot handle `var()` — it expects a resolved numeric or named value.
+
+**Fix:** Added `resolveVarValue(value, element)` which resolves `var(--prop, fallback)` references against the animated element's computed styles (`getComputedStyle`). If the custom property is defined on the element, its value is used; otherwise the fallback inside the `var()` is substituted. Nested `var()` calls are resolved recursively. `parseAnimationRange` now accepts an optional `element` parameter and resolves `var()` references before tokenising. The `ProxyAnimation` constructor passes `animation.effect?.target` as the element. ([proxy-animation.js](src/proxy-animation.js))
+
+## Other fixes
+
+- **Vite dev server support**: The polyfill's CSS injection now works with Vite's dev server (`localhost:5173`) in addition to production builds.
+- **Skip semicolon at-rules**: The CSS parser no longer chokes on at-rules that end with a semicolon (e.g. `@charset`, `@import`) instead of a block.
+- **Restart animations on style addition**: Animations are restarted when new styles are added to the DOM so scroll-driven animations pick up dynamically injected stylesheets.
+
+---
+
 # Fork credits for imported fixes
 
 This repository has incorporated a small set of targeted fixes from community forks. Credit for the source work goes to:
