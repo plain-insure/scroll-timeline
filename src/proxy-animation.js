@@ -961,6 +961,43 @@ function getNormalEndRange(timeline) {
   unsupportedTimeline(timeline);
 }
 
+function resolveVarValue(value, element) {
+  if (!value || !element || !value.includes('var(')) return value;
+
+  const varStart = value.indexOf('var(');
+  const prefix = value.slice(0, varStart);
+  let depth = 0;
+  let end = -1;
+  for (let j = varStart + 3; j < value.length; j++) {
+    if (value[j] === '(') depth++;
+    else if (value[j] === ')') {
+      if (depth === 0) { end = j; break; }
+      depth--;
+    }
+  }
+  if (end === -1) return value;
+
+  const inner = value.slice(varStart + 4, end);
+  const suffix = value.slice(end + 1);
+
+  let commaIdx = -1;
+  let innerDepth = 0;
+  for (let j = 0; j < inner.length; j++) {
+    if (inner[j] === '(') innerDepth++;
+    else if (inner[j] === ')') innerDepth--;
+    else if (inner[j] === ',' && innerDepth === 0) { commaIdx = j; break; }
+  }
+
+  const propName = (commaIdx === -1 ? inner : inner.slice(0, commaIdx)).trim();
+  const fallback = commaIdx === -1 ? '' : inner.slice(commaIdx + 1).trim();
+  const resolved = getComputedStyle(element).getPropertyValue(propName).trim();
+  const replacement = resolved || fallback;
+  if (!replacement) return value;
+
+  const result = prefix + replacement + suffix;
+  return result.includes('var(') ? resolveVarValue(result, element) : result;
+}
+
 function parseAnimationRangeOffset(part, value) {
   try {
     return simplifyCalculation(CSSNumericValue.parse(value), {});
@@ -969,12 +1006,15 @@ function parseAnimationRangeOffset(part, value) {
   }
 }
 
-export function parseAnimationRange(timeline, value) {
+export function parseAnimationRange(timeline, value, element = null) {
   if (!value)
     return {
       start: 'normal',
       end: 'normal',
     };
+
+  if (element && value.includes('var('))
+    value = resolveVarValue(value, element);
 
   const animationRange = {
     start: getNormalStartRange(timeline),
@@ -1142,7 +1182,7 @@ export class ProxyAnimation {
       effect: null,
       // The animation attachment range, restricting the animation’s
       // active interval to that range of a timeline
-      animationRange: isScrollAnimation ? parseAnimationRange(timeline, animOptions['animation-range']) : null,
+      animationRange: isScrollAnimation ? parseAnimationRange(timeline, animOptions['animation-range'], animation.effect?.target ?? null) : null,
       proxy: this
     });
   }
