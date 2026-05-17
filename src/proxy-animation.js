@@ -971,8 +971,8 @@ function resolveVarValue(value, element) {
   for (let j = varStart + 3; j < value.length; j++) {
     if (value[j] === '(') depth++;
     else if (value[j] === ')') {
-      if (depth === 0) { end = j; break; }
       depth--;
+      if (depth === 0) { end = j; break; }
     }
   }
   if (end === -1) return value;
